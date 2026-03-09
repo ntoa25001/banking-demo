@@ -73,22 +73,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.5
+
       - name: Trivy FS scan
-        id: trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: 1
-          format: table
-          output: trivy-report.txt
+        run: |
+          # Ghi report ra file (trivy ghi file trước khi exit)
+          trivy fs . --severity HIGH,CRITICAL --ignore-unfixed --format table -o trivy-report.txt
+          # exit-code 1 khi có vuln → block merge
 
       - name: Upload Trivy report
         uses: actions/upload-artifact@v4
         if: always()
-        continue-on-error: true
         with:
           name: trivy-report
           path: trivy-report.txt
@@ -195,6 +191,23 @@ jobs:
 
           if [ -n "$FAILED" ]; then
             echo "**Merge blocked.** Failed:${FAILED}" >> report.md
+            echo "" >> report.md
+            # Append chi tiết report (chỉ job failed) vào PR comment
+            if [ "${{ needs.sast-trivy.result }}" != "success" ]; then
+              for f in "trivy-report/trivy-report.txt" "trivy-report.txt"; do
+                [ -f "$f" ] && { echo "<details><summary>Trivy Report</summary>" >> report.md; echo '```' >> report.md; cat "$f" >> report.md; echo '```' >> report.md; echo "</details>" >> report.md; break; }
+              done
+            fi
+            if [ "${{ needs.sast-bandit.result }}" != "success" ]; then
+              for f in "bandit-report/bandit-report.txt" "bandit-report.txt"; do
+                [ -f "$f" ] && { echo "<details><summary>Bandit Report</summary>" >> report.md; echo '```' >> report.md; cat "$f" >> report.md; echo '```' >> report.md; echo "</details>" >> report.md; break; }
+              done
+            fi
+            if [ "${{ needs.dep-scan.result }}" != "success" ]; then
+              for f in "audit-report/audit-report.txt" "audit-report.txt"; do
+                [ -f "$f" ] && { echo "<details><summary>Dependency Scan Report</summary>" >> report.md; echo '```' >> report.md; cat "$f" >> report.md; echo '```' >> report.md; echo "</details>" >> report.md; break; }
+              done
+            fi
           else
             echo "All checks passed." >> report.md
           fi
@@ -231,7 +244,7 @@ jobs:
               });
             }
 
-      - name: Notify Telegram
+      - name: Notify Telegram (summary)
         uses: appleboy/telegram-action@master
         continue-on-error: true
         with:
@@ -245,3 +258,23 @@ jobs:
             Branch: <code>${{ github.head_ref }}</code>
             Status: ${{ job.status }}
             Lint: ${{ needs.lint.result }} | Test: ${{ needs.test.result }} | SAST: ${{ needs.sast-trivy.result }} | Dep: ${{ needs.dep-scan.result }}
+
+      - name: Send failed reports to Telegram
+        if: |
+          needs.sast-trivy.result != 'success' ||
+          needs.sast-bandit.result != 'success' ||
+          needs.dep-scan.result != 'success'
+        continue-on-error: true
+        run: |
+          send_report() {
+            local name="$1"
+            local path="$2"
+            [ -f "$path" ] || return 0
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
+              -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -F "document=@$path" \
+              -F "caption=🔒 $name - full report"
+          }
+          send_report "Trivy SAST" "trivy-report/trivy-report.txt" || send_report "Trivy SAST" "trivy-report.txt"
+          send_report "Bandit SAST" "bandit-report/bandit-report.txt" || send_report "Bandit SAST" "bandit-report.txt"
+          send_report "Dependency Scan" "audit-report/audit-report.txt" || send_report "Dependency Scan" "audit-report.txt"
