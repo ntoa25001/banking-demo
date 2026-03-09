@@ -165,6 +165,8 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         continue-on-error: true
+        with:
+          merge-multiple: false
 
       - name: Build report
         id: report
@@ -268,13 +270,15 @@ jobs:
         run: |
           send_report() {
             local name="$1"
-            local path="$2"
-            [ -f "$path" ] || return 0
+            local pattern="$2"
+            local f
+            f=$(find . -name "$pattern" -type f 2>/dev/null | head -1)
+            [ -n "$f" ] && [ -f "$f" ] || return 0
             curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
               -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-              -F "document=@$path" \
+              -F "document=@$f" \
               -F "caption=🔒 $name - full report"
           }
-          send_report "Trivy SAST" "trivy-report/trivy-report.txt" || send_report "Trivy SAST" "trivy-report.txt"
-          send_report "Bandit SAST" "bandit-report/bandit-report.txt" || send_report "Bandit SAST" "bandit-report.txt"
-          send_report "Dependency Scan" "audit-report/audit-report.txt" || send_report "Dependency Scan" "audit-report.txt"
+          [ "${{ needs.sast-trivy.result }}" != "success" ] && send_report "Trivy SAST" "trivy-report.txt"
+          [ "${{ needs.sast-bandit.result }}" != "success" ] && send_report "Bandit SAST" "bandit-report.txt"
+          [ "${{ needs.dep-scan.result }}" != "success" ] && send_report "Dependency Scan" "audit-report.txt"
