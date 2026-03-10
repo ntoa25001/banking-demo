@@ -1,3 +1,4 @@
+import os
 from passlib.context import CryptContext
 
 # Giảm rounds (mặc định 10) nếu CPU cao; 12 = an toàn hơn nhưng ~2x chậm
