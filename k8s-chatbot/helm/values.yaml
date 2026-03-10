@@ -3,7 +3,7 @@ namespace: k8s-chatbot
 backend:
   image:
     repository: registry.gitlab.com/kiettt164/banking-demo-payment/k8s-chatbot
-    tag: 17fb2d3
+    tag: 965462d
     pullPolicy: Always
   imagePullSecrets:
     - name: gitlab-registry  # dùng chung với banking
