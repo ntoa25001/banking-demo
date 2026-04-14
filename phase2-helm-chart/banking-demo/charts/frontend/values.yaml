@@ -4,7 +4,7 @@ frontend:
   enabled: true
   image:
     repository: registry.gitlab.com/ninhductoan52/banking-demo-payment/frontend
-    tag: 2d4c7af
+    tag: 6194f85
     pullPolicy: IfNotPresent
   imagePullSecrets: []
   replicas: 1
