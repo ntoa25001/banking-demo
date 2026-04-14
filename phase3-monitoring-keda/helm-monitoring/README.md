@@ -56,7 +56,7 @@ helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheu
 - **Chart:** `grafana/loki`
 - **Values:** `values-loki.yaml`
   - Deploy dạng single binary (hoặc simple scalable tùy chỉnh)
-  - Persistence dùng PVC; có thể set `storageClassName: nfs-client` nếu dùng NFS
+  - Persistence dùng PVC; có thể set `storageClassName: local-path` nếu dùng NFS
 
 ```bash
 helm upgrade --install loki grafana/loki -n monitoring -f values-loki.yaml

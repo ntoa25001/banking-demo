@@ -15,7 +15,7 @@ metadata:
   name: rabbitmq-data
   namespace: rabbit
 spec:
-  storageClassName: nfs-client
+  storageClassName: local-path
   accessModes: [ReadWriteOnce]
   resources:
     requests:

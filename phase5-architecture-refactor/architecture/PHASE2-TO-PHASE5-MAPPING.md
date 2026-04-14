@@ -79,7 +79,7 @@ Config Phase 2 nằm trong `phase2-helm-chart/banking-demo/charts/{kong,redis,po
 | `secretRef.name: banking-db-secret`, `keys: user/password/db` | Bitnami tạo secret `postgres-postgresql`; keys `postgres-password`, `user`, `database`. Dùng values: `auth.username`, `auth.password`, `auth.database` |
 | `postgresUser: banking`, `postgresPassword: bankingpass`, `postgresDb: banking` (trong common) | `--set auth.username=banking` (hoặc `auth.postgresPassword` tùy chart), `auth.database=banking`, `auth.password=bankingpass` |
 | `service.port: 5432` | Bitnami mặc định 5432 |
-| `storage.size: 1Gi`, `storageClassName: nfs-client` | `primary.persistence.size=1Gi`, `primary.persistence.storageClass=nfs-client` (nếu giữ NFS) |
+| `storage.size: 1Gi`, `storageClassName: local-path` | `primary.persistence.size=1Gi`, `primary.persistence.storageClass=nfs-client` (nếu giữ NFS) |
 | `image.tag: "16"` | Bitnami: `image.tag` tương ứng bản 16 |
 
 Connection string app (Phase 2): `postgresql://banking:bankingpass@postgres:5432/banking`.  
@@ -91,7 +91,7 @@ Phase 5 (cross-ns): `postgresql://banking:bankingpass@postgres-postgresql.postgr
 |------------------------|-------------------------|
 | `fullnameOverride: redis`, `service.port: 6379` | Release name `redis` → Service `redis-master` (Bitnami); port 6379 |
 | Không auth (`redis://redis:6379/0`) | `auth.enabled: false` |
-| `storage.size: 256Mi`, `storageClassName: nfs-client` | `master.persistence.size=256Mi`, `master.persistence.storageClass=nfs-client` |
+| `storage.size: 256Mi`, `storageClassName: local-path` | `master.persistence.size=256Mi`, `master.persistence.storageClass=nfs-client` |
 | `image.tag: 7-alpine` | Bitnami: `image.tag` tương ứng 7 |
 
 Connection string app (Phase 2): `redis://redis:6379/0`.  
