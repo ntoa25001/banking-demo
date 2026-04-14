@@ -3,7 +3,7 @@ notification-service:
   fullnameOverride: notification-service
   enabled: true
   image:
-    repository: registry.gitlab.com/kiettt164/banking-demo-payment/notification-service
+    repository: registry.gitlab.com/ninhductoan52/banking-demo-payment/notification-service
     tag: 2d4c7af
     pullPolicy: Always
   imagePullSecrets: []
