@@ -58,7 +58,7 @@ on:
 env:
   # GitLab Container Registry (từ phase1)
   REGISTRY: registry.gitlab.com
-  IMAGE_PREFIX: kiettt164/banking-demo-payment
+  IMAGE_PREFIX: ninhductoan52/banking-demo-payment
 
 jobs:
   # ============================================================
