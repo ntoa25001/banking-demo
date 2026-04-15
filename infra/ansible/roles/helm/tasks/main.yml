@@ -1,0 +1,20 @@
+- name: Check whether helm exists
+  stat:
+    path: /usr/local/bin/helm
+  register: helm_bin
+
+- name: Download Helm installer
+  get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: /tmp/get_helm.sh
+    mode: "0755"
+  when: not helm_bin.stat.exists
+
+- name: Install Helm
+  command: /tmp/get_helm.sh
+  when: not helm_bin.stat.exists
+
+- name: Verify Helm version
+  command: helm version
+  register: helm_version
+  changed_when: false

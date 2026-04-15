@@ -1,0 +1,5 @@
+- name: Install Monitoring stack and KEDA
+  hosts: monitoring
+  become: true
+  roles:
+    - monitoring

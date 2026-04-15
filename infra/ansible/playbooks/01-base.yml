@@ -1,0 +1,5 @@
+- name: Base OS bootstrap
+  hosts: vps
+  become: true
+  roles:
+    - base

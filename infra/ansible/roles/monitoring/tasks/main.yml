@@ -1,0 +1,102 @@
+- name: Add Helm repositories for monitoring
+  shell: |
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
+    helm repo add grafana https://grafana.github.io/helm-charts || true
+    helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || true
+    helm repo add kedacore https://kedacore.github.io/charts || true
+    helm repo update
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Create monitoring namespace
+  command: kubectl create namespace {{ monitoring_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: monitoring_ns
+  failed_when: false
+  changed_when: "'created' in monitoring_ns.stdout"
+  when: enable_monitoring
+
+- name: Install kube-prometheus-stack
+  shell: |
+    helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack       -n {{ monitoring_namespace }}       -f {{ repo_path_on_server }}/phase3-monitoring-keda/helm-monitoring/values-kube-prometheus-stack.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Install Loki
+  shell: |
+    helm upgrade --install loki grafana/loki       -n {{ monitoring_namespace }}       -f {{ repo_path_on_server }}/phase3-monitoring-keda/helm-monitoring/values-loki.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Install Promtail
+  shell: |
+    helm upgrade --install promtail grafana/promtail       -n {{ monitoring_namespace }}       -f {{ repo_path_on_server }}/phase3-monitoring-keda/helm-monitoring/values-promtail.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Install Tempo
+  shell: |
+    helm upgrade --install tempo grafana/tempo       -n {{ monitoring_namespace }}       -f {{ repo_path_on_server }}/phase3-monitoring-keda/helm-monitoring/values-tempo.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Install OpenTelemetry Collector
+  shell: |
+    helm upgrade --install otel-collector open-telemetry/opentelemetry-collector       -n {{ monitoring_namespace }}       -f {{ repo_path_on_server }}/phase3-monitoring-keda/helm-monitoring/values-otel-collector.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Create keda namespace
+  command: kubectl create namespace {{ keda_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: keda_ns
+  failed_when: false
+  changed_when: "'created' in keda_ns.stdout"
+  when: enable_monitoring
+
+- name: Install KEDA
+  shell: helm upgrade --install keda kedacore/keda -n {{ keda_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+  when: enable_monitoring
+
+- name: Apply KEDA ScaledObjects
+  command: kubectl apply -f {{ repo_path_on_server }}/phase3-monitoring-keda/keda/
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: enable_monitoring
+
+- name: Wait for monitoring pods
+  shell: kubectl get pods -n {{ monitoring_namespace }} --no-headers
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: monitoring_pods
+  retries: 30
+  delay: 10
+  until: >
+    'kube-prometheus-stack-grafana' in monitoring_pods.stdout and
+    'prometheus-kube-prometheus-stack-prometheus' in monitoring_pods.stdout and
+    'loki' in monitoring_pods.stdout and
+    'tempo' in monitoring_pods.stdout and
+    'Running' in monitoring_pods.stdout
+  when: enable_monitoring

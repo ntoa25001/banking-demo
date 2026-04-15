@@ -1,0 +1,91 @@
+- name: Update apt cache
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name:
+      - curl
+      - git
+      - unzip
+      - tar
+      - jq
+      - ca-certificates
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - python3-pip
+      - ufw
+    state: present
+
+- name: Disable swap immediately
+  command: swapoff -a
+  when: ansible_swaptotal_mb | int > 0
+
+- name: Remove swap from fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^\s*([^#].*\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Stop nginx if exists
+  systemd:
+    name: nginx
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Stop apache2 if exists
+  systemd:
+    name: apache2
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Stop caddy if exists
+  systemd:
+    name: caddy
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Allow SSH in UFW
+  ufw:
+    rule: allow
+    port: "{{ ansible_port | default(22) }}"
+    proto: tcp
+  failed_when: false
+
+- name: Allow HTTP in UFW
+  ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+  failed_when: false
+
+- name: Allow HTTPS in UFW
+  ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+  failed_when: false
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+  failed_when: false
+
+- name: Ensure /opt exists
+  file:
+    path: /opt
+    state: directory
+    mode: "0755"
+
+- name: Clone or update banking-demo repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ repo_path_on_server }}"
+    version: "{{ repo_branch }}"
+    update: true
+    force: true

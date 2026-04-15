@@ -1,9 +1,3 @@
-node_modules/
-npm-debug.log*
-yarn-error.log*
-.env
-**/node_modules/
-
 # Terraform
 **/.terraform/*
 *.tfstate
@@ -14,4 +8,3 @@ crash.log
 # Generated inventory
 infra/ansible/inventories/vps/hosts.ini
 infra/ansible/inventories/vps/group_vars/all.yml
-

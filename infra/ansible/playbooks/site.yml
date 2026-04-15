@@ -1,0 +1,7 @@
+- import_playbook: 01-base.yml
+- import_playbook: 02-k3s.yml
+- import_playbook: 03-helm.yml
+- import_playbook: 04-haproxy-ingress.yml
+- import_playbook: 05-argocd.yml
+- import_playbook: 06-banking-phase4.yml
+- import_playbook: 07-monitoring.yml

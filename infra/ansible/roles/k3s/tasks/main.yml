@@ -1,0 +1,39 @@
+- name: Check whether k3s is already installed
+  stat:
+    path: /usr/local/bin/k3s
+  register: k3s_bin
+
+- name: Install K3s
+  shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" INSTALL_K3S_EXEC="--disable=traefik" sh -
+  args:
+    executable: /bin/bash
+  when: not k3s_bin.stat.exists
+
+- name: Wait for k3s node to become Ready
+  shell: kubectl get nodes --no-headers
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: k3s_nodes
+  retries: 20
+  delay: 10
+  until: "' Ready ' in (' ' + k3s_nodes.stdout + ' ') or ' Ready,' in (' ' + k3s_nodes.stdout + ' ')"
+
+- name: Ensure .kube directory exists for root
+  file:
+    path: /root/.kube
+    state: directory
+    mode: "0700"
+
+- name: Copy kubeconfig to root home
+  copy:
+    src: "{{ kubeconfig_path }}"
+    dest: /root/.kube/config
+    remote_src: true
+    mode: "0600"
+
+- name: Replace localhost in copied kubeconfig with public IP
+  replace:
+    path: /root/.kube/config
+    regexp: '127\.0\.0\.1'
+    replace: "{{ public_ip }}"

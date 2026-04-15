@@ -1,0 +1,19 @@
+- name: Apply ArgoCD Project for Phase 4
+  command: kubectl apply -f {{ argocd_project_file }} -n {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: enable_phase4_bootstrap
+
+- name: Apply ArgoCD Application for Phase 4
+  command: kubectl apply -f {{ argocd_application_file }} -n {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: enable_phase4_bootstrap
+
+- name: Check ArgoCD Application object
+  command: kubectl get application {{ argocd_app_name }} -n {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: argocd_app_check
+  changed_when: false
+  when: enable_phase4_bootstrap

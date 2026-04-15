@@ -1,0 +1,36 @@
+- name: Create argocd namespace
+  command: kubectl create namespace {{ argocd_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: argocd_ns
+  failed_when: false
+  changed_when: "'created' in argocd_ns.stdout"
+
+- name: Install ArgoCD
+  command: >
+    kubectl apply -n {{ argocd_namespace }}
+    -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
+
+- name: Wait for argocd-server deployment
+  shell: kubectl rollout status deployment/argocd-server -n {{ argocd_namespace }} --timeout=300s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
+
+- name: Wait for argocd-repo-server deployment
+  shell: kubectl rollout status deployment/argocd-repo-server -n {{ argocd_namespace }} --timeout=300s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
+
+- name: Wait for argocd pods
+  shell: kubectl get pods -n {{ argocd_namespace }} --no-headers
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: argocd_pods
+  retries: 20
+  delay: 10
+  until: "'argocd-application-controller' in argocd_pods.stdout and 'Running' in argocd_pods.stdout"

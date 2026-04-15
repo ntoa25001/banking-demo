@@ -1,0 +1,14 @@
+server_name               = "banking-lab"
+public_ip                 = "194.233.85.69"
+ssh_user                  = "root"
+ssh_port                  = 22
+ssh_private_key_path      = "~/.ssh/id_ed25519"
+domain_name               = "npd-banking.co"
+
+enable_argocd             = true
+enable_monitoring         = true
+enable_phase4_bootstrap   = true
+
+k3s_version               = "v1.34.6+k3s1"
+repo_branch               = "main"
+repo_path_on_server       = "/opt/banking-demo"

@@ -1,0 +1,5 @@
+- name: Bootstrap Banking Demo Phase 4 app in ArgoCD
+  hosts: argocd
+  become: true
+  roles:
+    - banking_phase4

@@ -1,0 +1,26 @@
+- name: Add HAProxyTech Helm repository
+  command: helm repo add haproxytech https://haproxytech.github.io/helm-charts
+  register: haproxy_repo_add
+  failed_when: false
+  changed_when: "'has been added' in haproxy_repo_add.stdout"
+
+- name: Update Helm repositories
+  command: helm repo update
+  changed_when: false
+
+- name: Install HAProxy Ingress Controller
+  shell: |
+    helm upgrade --install haproxy-kubernetes-ingress       oci://ghcr.io/haproxytech/helm-charts/kubernetes-ingress       --namespace haproxy-controller       --create-namespace       --set controller.kind=DaemonSet       --set controller.daemonset.useHostPort=true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  args:
+    executable: /bin/bash
+
+- name: Wait for HAProxy controller pods
+  shell: kubectl get pods -n haproxy-controller --no-headers
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: haproxy_pods
+  retries: 20
+  delay: 10
+  until: "'Running' in haproxy_pods.stdout"
